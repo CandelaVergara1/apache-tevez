@@ -13,7 +13,7 @@
 | Nombre                            | Correo Electrónico              |
 | --------------------------------- | ------------------------------- |
 | Facundo Emanuel Avila Diaz Moreno | facundo.avila.027@mi.unc.edu.ar |
-|                                   | @mi.unc.edu.ar                  |
+| Candela Abigail Vergara           | candela.vergara@mi.unc.edu.ar   |
 |                                   | @mi.unc.edu.ar                  |
 
 ## Introducción
