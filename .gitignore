@@ -1,0 +1,34 @@
+# Object files
+*.o
+*.obj
+
+# Binaries / executables
+*.out
+*.exe
+*.elf
+*.bin
+*.hex
+
+# Libraries
+*.a
+*.so
+*.dll
+
+# Intermediate files
+*.d
+*.map
+
+# Compiler / debug generated files
+*.log
+
+# Build directories
+build/
+dist/
+bin/
+out/
+
+# VS Code
+.vscode/
+
+# Makefile common output
+Makefile.bak
