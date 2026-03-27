@@ -88,6 +88,9 @@ A partir de la realización del tutorial descripto en time profiling pudimos rea
   ![Captura del perfil plano](FlatProfile.png)
 
 + Gráfico de llamadas: representa las relaciones entre funciones, mostrando qué funciones llaman a una determinada función y cuáles son invocadas desde ella. Esto permite analizar la estructura de ejecución del programa y estimar el tiempo empleado en cada subrutina.
+
+
+### Conclusiones sobre el uso del tiempo de las funciones.
   
 
 
