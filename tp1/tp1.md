@@ -83,16 +83,27 @@ El profiling es el proceso de medir y analizar el rendimiento de un codigo, eval
 
 A partir de la realización del tutorial descripto en time profiling pudimos realizar el gprof de test_gprof.c y test_gprof_new.c, del cual obtuvimos un archivo txt que nos dio los resultados para el analisis ya que contiene toda la información de perfil deseada. Como ejemplo subimos el archivo `analisis_candela.txt`, el cual contiene dos tablas importantes:
 
-+ Perfil Plano: Brinda una descripción general de la información de tiempo de las funciones, como el consumo de tiempo para la ejecución de una función en particular, cuántas veces se llamó, etc.
++ **Perfil Plano:** Brinda una descripción general de la información de tiempo de las funciones, como el consumo de tiempo para la ejecución de una función en particular, cuántas veces se llamó, etc.
 
   ![Captura del perfil plano](FlatProfile.png)
 
-+ Gráfico de llamadas: representa las relaciones entre funciones, mostrando qué funciones llaman a una determinada función y cuáles son invocadas desde ella. Esto permite analizar la estructura de ejecución del programa y estimar el tiempo empleado en cada subrutina.
+  Siendo:
+  + Self seconds: tiempo de ejecucion propio de cada funcion.
+  + %Time: porcentaje del tiempo total consumido por la funcion.
+  + Total seconds: es el tiempo de la funcion + el de las funciones que llama (sus hijos).
+  + Calls: cantidad de veces que fue llamada.
+
++ **Gráfico de llamadas:** representa las relaciones entre funciones, mostrando qué funciones llaman a una determinada función y cuáles son invocadas desde ella. Esto permite analizar la estructura de ejecución del programa y estimar el tiempo empleado en cada subrutina.
   
   ![Captura del grafico de llamadas](Callgraph.png)
 
 
-### Conclusiones sobre el uso del tiempo de las funciones.
+### Conclusiones sobre el uso del tiempo de las funciones
+
+A partir del analisis de los resultados del profiling pudimos observar que la función func1 es la que mayor tiempo consume, representando aproximadamente el 39.21% del tiempo total de ejecución, esto indica que es la principal candidata a optimización, ya que es donde más tiempo pasa el programa. En segundo lugar, la función new_func1 utiliza alrededor del 35.53% del tiempo, esto sugiere que también tiene un impacto significativo en el rendimiento general.
+Por otro lado, la función func2 consume un 25% del tiempo total, lo que la ubica como una función de importancia media en términos de consumo de recursos.
+Finalmente, la función main tiene un impacto prácticamente despreciable (0.26% del tiempo total), lo cual es esperable, ya que generalmente se encarga solo de la coordinación del flujo del programa.
+En conclusión, el profiling permite identificar que la mayor parte del tiempo de ejecución se concentra en pocas funciones (principalmente func1 y new_func1), lo cual es clave para enfocar esfuerzos de optimización de manera eficiente.
   
 
 
