@@ -219,7 +219,7 @@ void loop() {}
 
 ### Salida del programa, variando la frecuencia de clock de la ESP32
 
-![Output programa](esp32.jpg)
+![Output programa](profiling-img/esp32.jpg)
 
 ## Parte 4: Profiling (gprof)
 El profiling es el proceso de medir y analizar el rendimiento de un codigo, evaluando principalmente el tiempo de ejecución del programa, como asi tambien cuanto tiempo tarda en ejecutarse cada funcion. Permite identificar qué partes del código consumen más recursos, mediante herramientas llamadas profilers, que suelen utilizar técnicas como muestreo (perf) o inyeccion de codigo (gprof).
@@ -228,7 +228,7 @@ A partir de la realización del tutorial descripto en time profiling pudimos rea
 
 + **Perfil Plano:** Brinda una descripción general de la información de tiempo de las funciones, como el consumo de tiempo para la ejecución de una función en particular, cuántas veces se llamó, etc.
 
-  ![Captura del perfil plano](FlatProfile.png)
+  ![Captura del perfil plano](profiling-img/FlatProfile.png)
 
   Siendo:
   + Self seconds: tiempo de ejecucion propio de cada funcion.
@@ -238,7 +238,7 @@ A partir de la realización del tutorial descripto en time profiling pudimos rea
 
 + **Gráfico de llamadas:** representa las relaciones entre funciones, mostrando qué funciones llaman a una determinada función y cuáles son invocadas desde ella. Esto permite analizar la estructura de ejecución del programa y estimar el tiempo empleado en cada subrutina.
   
-  ![Captura del grafico de llamadas](Callgraph.png)
+  ![Captura del grafico de llamadas](profiling-img/Callgraph.png)
 
 
 ### Conclusiones sobre el uso del tiempo de las funciones
