@@ -212,7 +212,7 @@ void loop() {}
 
 ### Salida del programa, variando la frecuencia de clock de la ESP32
 
-![Output programa](profiling-img/esp32.jpg)
+![Output programa](profiling/imgs/esp32.jpg)
 
 ## Parte 4: Profiling (gprof)
 
@@ -222,7 +222,7 @@ A partir de la realización del tutorial descripto en time profiling pudimos rea
 
 - **Perfil Plano:** Brinda una descripción general de la información de tiempo de las funciones, como el consumo de tiempo para la ejecución de una función en particular, cuántas veces se llamó, etc.
 
-  ![Captura del perfil plano](profiling-img/FlatProfile.png)
+  ![Captura del perfil plano](profiling/imgs/FlatProfile.png)
 
   Siendo:
   - Self seconds: tiempo de ejecucion propio de cada funcion.
@@ -232,7 +232,7 @@ A partir de la realización del tutorial descripto en time profiling pudimos rea
 
 - **Gráfico de llamadas:** representa las relaciones entre funciones, mostrando qué funciones llaman a una determinada función y cuáles son invocadas desde ella. Esto permite analizar la estructura de ejecución del programa y estimar el tiempo empleado en cada subrutina.
 
-  ![Captura del grafico de llamadas](profiling-img/Callgraph.png)
+  ![Captura del grafico de llamadas](profiling/imgs/Callgraph.png)
 
 ## Conclusiones sobre el uso del tiempo de las funciones
 
