@@ -2,7 +2,7 @@
 
 set -e
 
-# Config
+# --- Configuration ---
 C_SRC="number_conversor.c"
 ASM_SRC="conversor.s"
 C_OBJ="c_conversor.o"
@@ -15,7 +15,5 @@ gcc -g3 -O0 -o ${PROGRAM} ${C_OBJ} ${ASM_OBJ}
 
 ./${PROGRAM}
 
-rm program
-rm c_conversor.o
-rm conversor.o
+rm ${PROGRAM} ${C_OBJ} ${ASM_OBJ}
 
