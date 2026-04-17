@@ -1,41 +1,27 @@
-# app.py
-import ctypes
 import requests
 import os
+import ctypes
+url = 'https://api.worldbank.org/v2/en/country/AR/indicator/SI.POV.GINI?format=json&date=2011:2020&per_page=100'
+req = requests.get(url)
 
-path = os.path.abspath('./conversor_lib.so')
-conversor_lib = ctypes.CDLL(path)
-conversor_lib.num_conversor.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int]
-conversor_lib.num_conversor.restype = ctypes.POINTER(ctypes.c_int)
+# Cargar librería
+path = os.path.abspath('./libgini.so')
+libgini = ctypes.CDLL(path)
+libgini.procesar_gini.argtypes = (ctypes.c_float,)
+libgini.procesar_gini.restype = ctypes.c_int
 
-def convert_values(values):
-    quantity = len(values)
-    input_array = (ctypes.c_float * quantity)(*values)
-    result_pointer = conversor_lib.num_conversor(input_array, quantity)
-    integer_results = [result_pointer[i] for i in range(quantity)]
-    return integer_results
-
-def main():
-    api_url = "https://api.worldbank.org/v2/en/country/AR/indicator/SI.POV.GINI?format=json&date=2011:2020"
+if req:
+    print("Response OK - Status: ", req.status_code)
+    data = req.json()
+    registros = data[1]
     
-    # API consumption
-    try:
-        response = requests.get(api_url)
-        response.raise_for_status() # Check download status
-        json_data = response.json()
-
-        data_list = json_data[1]
-
-        gini_values = [element['value'] for element in data_list if element['value'] is not None]
-        print("Extracted values from API: ", gini_values)
-    except requests.exceptions.RequestException as e:
-        print(f"Error trying to connect to API: {e}")
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-    
-    integer_values = convert_values(gini_values) # C function call
-    print("Converted values from C:   ", integer_values) 
-
-if __name__ == '__main__':
-    main()
+    for i in registros:
+        pais = i['country']['value']
+        anio = i['date']
+        valor = i['value']
+        if valor is not None:
+            resultado = libgini.procesar_gini(valor)
+            print(f'{pais} - {anio}: {resultado}')
+else:
+    print('Response failed - Status: ', req.status_code)
 

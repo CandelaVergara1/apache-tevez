@@ -2,6 +2,9 @@
 *.o
 *.obj
 
+# Virtual environment
+.venv/
+
 # Binaries / executables
 *.out
 *.exe
