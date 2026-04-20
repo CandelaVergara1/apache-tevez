@@ -2,6 +2,9 @@
 *.o
 *.obj
 
+# Virtual environment
+.venv/
+
 # Binaries / executables
 *.out
 *.exe
@@ -32,3 +35,7 @@ out/
 
 # Makefile common output
 Makefile.bak
+*.o
+*.so
+program
+.gdb_history
