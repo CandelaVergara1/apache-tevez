@@ -35,3 +35,7 @@ out/
 
 # Makefile common output
 Makefile.bak
+*.o
+*.so
+program
+.gdb_history
