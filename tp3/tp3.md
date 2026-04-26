@@ -74,3 +74,33 @@ Las ventajas que presenta coreboot son:
 - Sin costos de licencia: Al ser open-source, no tiene fees de licencia y recibe contribuciones de cientos de desarrolladores al año.
 - Transparencia: no tiene backdoors ocultos como los que se han encontrado en firmware propietario.
 - Flexibilidad: Soporta múltiples arquitecturas (x86, ARM, ARM64, MIPS, RISC-V) y puede cargar distintos payloads como SeaBIOS, Linux, o UEFI.
+
+### Linker
+
+#### 1. ¿Qué es un Linker? ¿Que hace?
+
+Un linker es un programa del sistema que actúa como el paso final en el proceso de compilación de software. Su propósito general es tomar uno o más archivos objeto (los archivos `.o` o `.obj` generados por el compilador o el ensamblador) y combinarlos para producir un único archivo ejecutable, una biblioteca o un archivo objeto más grande.
+
+Las tareas principales que realiza un linker se dividen en dos grandes categorías:
+
+1. **Resolución de símbolos:** En proyectos con múltiples archivos fuente, es común que un archivo haga referencia a una función o variable definida en otro distinto. El compilador, al procesar los archivos de a uno por vez, deja estas referencias "abiertas" o sin resolver. El linker se encarga de recorrer todos los archivos objeto, buscar dónde está realmente definida cada función o variable, y enlazar esa referencia con su definición exacta.
+2. **Reubicación y Organización de Memoria:** El compilador procesa cada archivo asumiendo por defecto que el código comenzará en la dirección de memoria `0`. El linker toma las diferentes secciones de los archivos objeto (como la sección `.text` para código ejecutable, `.data` para variables inicializadas, y `.bss` para variables sin inicializar) y las unifica. Luego, calcula y asigna las direcciones de memoria definitivas donde residirá cada parte del programa al momento de ejecutarse, ajustando todos los punteros y saltos para que funcionen correctamente.
+
+#### 2. ¿Que es la dirección que aparece en el script del linker?¿Porqué es necesaria ?
+
+Esa direccion es utilizada para manejar la dirección base de memoria (VMA o *Virtual Memory Address*) en la cual el programa será cargado físicamente en la RAM para su ejecución. En el *Linker Script* se define típicamente con el símbolo `.` (por ejemplo, `. = 0x7c00;`). Esto es fundamental en el desarrollo a bajo nivel, como en la escritura de un bootloader o un kernel para pasar a **modo protegido**, ya que el hardware impone reglas estrictas. Por ejemplo, en la arquitectura x86, el BIOS siempre carga el sector de arranque (MBR) exactamente en la dirección de memoria física `0x7C00`.
+
+Esta dirección es **estrictamente necesaria** porque le informa al linker cuál será la ubicación física real del programa en la memoria RAM. Si no se usara el script, el linker calcularía todas las direcciones absolutas asumiendo que el programa arranca en `0x0`. Como resultado, cuando el código intente leer una variable o saltar a una función una vez cargado por el BIOS, buscará en la dirección equivocada de la RAM y el sistema fallará. El linker script garantiza que las referencias de memoria compiladas coincidan con la realidad física del hardware.
+
+#### 3. Comparacion de la salida de objdump con hd
+#### 4. Grabacion de la imagen en un pendrive
+
+#### 5. ¿Para qué se utiliza la opción `--oformat binary` en el linker?
+
+Esta opcion le indica al linker que el archivo ejecutable resultante debe ser un **binario plano (flat binary)**. Esto significa que el archivo final será crudo y contendrá exclusivamente el código máquina y los datos, eliminando por completo cualquier tipo de metadatos, cabeceras o tablas de símbolos que los linkers suelen agregar por defecto (como los formatos estándar ELF en Linux).
+
+En el desarrollo a bajo nivel (como al hacer un bootloader para pasar a modo protegido), el código es cargado directamente por el BIOS en la memoria. A diferencia del sistema operativo, el BIOS no sabe leer formatos de archivos complejos ni entiende de cabeceras; simplemente lee sectores del disco, los pone en memoria y empieza a ejecutar lo que haya ahí byte por byte. Si el archivo tuviera cabeceras ELF, el procesador intentaría "ejecutar" esos metadatos como si fueran instrucciones, lo que haría que el sistema crashee instantáneamente. La opción `--oformat binary` asegura que al procesador solo le lleguen las instrucciones puras que debe ejecutar.
+
+
+
+
