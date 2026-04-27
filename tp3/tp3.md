@@ -77,6 +77,53 @@ Las ventajas que presenta coreboot son:
 - Transparencia: no tiene backdoors ocultos como los que se han encontrado en firmware propietario.
 - Flexibilidad: Soporta múltiples arquitecturas (x86, ARM, ARM64, MIPS, RISC-V) y puede cargar distintos payloads como SeaBIOS, Linux, o UEFI.
 
+---
+
+### Pequeño hello world
+
+Usando como referencia el siguiente [post](https://stackoverflow.com/questions/59881880/what-memory-is-impacted-using-the-location-counter-in-linker-script) de StackOverflow, se crea una imagen booteable mínima, la cual imprime un hello world por consola, y luego se frena el procesador con la instrucción de hlt.
+
+### main.S
+
+```asm
+.code16
+    mov $msg, %si
+    mov $0x0e, %ah
+loop:
+    lodsb
+    or %al, %al
+    jz halt
+    int $0x10
+    jmp loop
+halt:
+    hlt
+msg:
+    .asciz "hello world"
+```
+
+### link.ld
+
+```ld
+SECTIONS
+{
+    /_ The BIOS loads the code from the disk to this location.
+    _ We must tell that to the linker so that it can properly
+    _ calculate the addresses of symbols we might jump to.
+    _/
+    . = 0x7c00;
+    .text :
+    {
+        \_\_start = .;
+        _(.text)
+        /_ Place the magic boot bytes at the end of the first 512 sector. \*/
+        . = 0x1FE;
+        SHORT(0xAA55)
+    }
+}
+```
+
+![](img/hello_world.jpg)
+
 ## Linker
 
 #### 1. ¿Qué es un Linker? ¿Que hace?
@@ -96,6 +143,13 @@ Esta dirección es **estrictamente necesaria** porque le informa al linker cuál
 
 #### 3. Comparacion de la salida de objdump con hd
 
+![](img/dump.jpg)
+
+Comparando las salidas de objdump y hexdump, se puede concluir que a partir de la dirección 0x00 de la imagen, está la sección .text de la rutina de Assembly que ejecuta el hello world. Seguido de esto, se tiene un relleno para llegar a los 512 Bytes, y por último, la firma del MBR.
+Esta comparación Byte a Byte se aprecia mejor con el programa xxd, donde los bytes se muestran en el orden correcto:
+
+![](img/xxd.jpg)
+
 #### 4. Grabacion de la imagen en un pendrive
 
 #### 5. ¿Para qué se utiliza la opción `--oformat binary` en el linker?
@@ -104,10 +158,9 @@ Esta opcion le indica al linker que el archivo ejecutable resultante debe ser un
 
 En el desarrollo a bajo nivel (como al hacer un bootloader para pasar a modo protegido), el código es cargado directamente por el BIOS en la memoria. A diferencia del sistema operativo, el BIOS no sabe leer formatos de archivos complejos ni entiende de cabeceras; simplemente lee sectores del disco, los pone en memoria y empieza a ejecutar lo que haya ahí byte por byte. Si el archivo tuviera cabeceras ELF, el procesador intentaría "ejecutar" esos metadatos como si fueran instrucciones, lo que haría que el sistema crashee instantáneamente. La opción `--oformat binary` asegura que al procesador solo le lleguen las instrucciones puras que debe ejecutar.
 
-
 ## Modo protegido
 
-#### ¿Cómo sería un programa que tenga dos descriptores de memoria diferentes, uno para cada segmento (código y datos) en espacios de memoria diferenciados? 
+#### ¿Cómo sería un programa que tenga dos descriptores de memoria diferentes, uno para cada segmento (código y datos) en espacios de memoria diferenciados?
 
 Actualmente nuestro programa tiene dos descriptores (código y datos) pero ambos con base y límite de 4 GB, es decir, comparten todo el espacio de memoria. Para tener espacios diferenciados habría que modificar la base de cada descriptor.
 
@@ -139,7 +192,6 @@ gdt_data:
 
 La ventaja que presenta esto es que cada segmento tiene su propia zona de memoria y no se pueden pisar entre sí. Si el código intenta acceder fuera de su límite o los datos intentan acceder fuera de su límite o intentan ejecutarse, el procesador genera una excepción (General Protection Fault).
 
-
 #### Cambiar los bits de acceso del segmento de datos para que sea de solo lectura, intentar escribir, ¿Que sucede? ¿Que debería suceder a continuación? (revisar el teórico) Verificarlo con gdb.
 
 Para demostrar qué sucede al cambiar el segmento de datos a solo lectura, se modificó el byte de de acceso del descriptor `gdt_data` en la GDT.
@@ -158,7 +210,7 @@ Con el segmento de datos con escritura habilitada, el programa escribe "Hello" e
 
 ![](/tp3/img/1.png)
 
-Al cambiar a solo lectura, cuando el código intenta escribir en `0xB8000`, el procesador detecta que el descriptor de datos no tiene permisos de escritura y genera una General Protection Fault. Como no hay una IDT (Interrupt Descriptor Table) configurada para manejar esa excepción, se produce un triple fault: la excepción genera otra excepción, que genera otra, y el procesador se cuelga. En qemu se ve que el sistema no muestra nada después de  "Booting from Hard Disk...".
+Al cambiar a solo lectura, cuando el código intenta escribir en `0xB8000`, el procesador detecta que el descriptor de datos no tiene permisos de escritura y genera una General Protection Fault. Como no hay una IDT (Interrupt Descriptor Table) configurada para manejar esa excepción, se produce un triple fault: la excepción genera otra excepción, que genera otra, y el procesador se cuelga. En qemu se ve que el sistema no muestra nada después de "Booting from Hard Disk...".
 
 ![](/tp3/img/2.png)
 
@@ -182,4 +234,3 @@ mov %ax, %ss
 ```
 
 Se tienen estos valores porque en modo protegido los registros de segmento ya no contienen direcciones directas como en modo real. Contienen selectores que el procesador usa como índice para buscar en la GDT la base, el límite y los permisos del segmento correspondiente. El valor `0x00` no se puede usar porque la primera entrada de la GDT es obligatoriamente nula, así que los selectores válidos empiezan desde `0x08`.
-
