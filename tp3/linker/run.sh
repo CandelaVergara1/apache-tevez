@@ -6,12 +6,10 @@ as -g -o main.o main.S
 
 ld --oformat binary -o main.img -T link.ld main.o
 
-objdump -d -j .text main.o > output.txt
+objdump -D -b binary -mi8086 main.img | head -n 15
 
-printf '\n\n' >> output.txt
+printf '\n'
 
-hexdump main.img >> output.txt
+hexdump main.img
 
-cat output.txt
-
-rm main.o output.txt
+rm main.o 
