@@ -1,4 +1,4 @@
-# TP2 — Modo protegido
+# TP3 — Modo protegido
 
 ### Grupo: Apache Tevez
 
@@ -18,7 +18,7 @@
 
 ---
 
-### UEFI y coreboot
+## UEFI y coreboot
 
 #### 1. ¿Qué es UEFI? ¿como puedo usarlo? Mencionar además una función a la que podría llamar usando esa dinámica.
 
@@ -103,3 +103,83 @@ Esta dirección es **estrictamente necesaria** porque le informa al linker cuál
 Esta opcion le indica al linker que el archivo ejecutable resultante debe ser un **binario plano (flat binary)**. Esto significa que el archivo final será crudo y contendrá exclusivamente el código máquina y los datos, eliminando por completo cualquier tipo de metadatos, cabeceras o tablas de símbolos que los linkers suelen agregar por defecto (como los formatos estándar ELF en Linux).
 
 En el desarrollo a bajo nivel (como al hacer un bootloader para pasar a modo protegido), el código es cargado directamente por el BIOS en la memoria. A diferencia del sistema operativo, el BIOS no sabe leer formatos de archivos complejos ni entiende de cabeceras; simplemente lee sectores del disco, los pone en memoria y empieza a ejecutar lo que haya ahí byte por byte. Si el archivo tuviera cabeceras ELF, el procesador intentaría "ejecutar" esos metadatos como si fueran instrucciones, lo que haría que el sistema crashee instantáneamente. La opción `--oformat binary` asegura que al procesador solo le lleguen las instrucciones puras que debe ejecutar.
+
+
+## Modo protegido
+
+#### ¿Cómo sería un programa que tenga dos descriptores de memoria diferentes, uno para cada segmento (código y datos) en espacios de memoria diferenciados? 
+
+Actualmente nuestro programa tiene dos descriptores (código y datos) pero ambos con base y límite de 4 GB, es decir, comparten todo el espacio de memoria. Para tener espacios diferenciados habría que modificar la base de cada descriptor.
+
+Por ejemplo, si se quisiera cambiar el segmento de código ocupe los primeros 64 KB empezando en `0x00010000`, habría que cambiar la GDT de esta manera:
+
+En `gdt_code`, la base queda en 0 y el límite se reduce:
+
+```asm
+gdt_code:
+    .word 0xFFFF       # Límite 0-15 (64KB)
+    .word 0x0000       # Base 0-15 = 0x0000
+    .byte 0x00         # Base 16-23 = 0x00
+    .byte 0b10011010   # Acceso (igual)
+    .byte 0b01000000   # Granularidad byte, límite 16-19 = 0
+    .byte 0x00         # Base 24-31 = 0x00
+```
+
+en `gdt_data`, la base cambia `0x00010000`
+
+```asm
+gdt_data:
+    .word 0xFFFF       # Límite 0-15 (64KB)
+    .word 0x0000       # Base 0-15 = 0x0000
+    .byte 0x01         # Base 16-23 = 0x01 (acá cambia)
+    .byte 0b10010010   # Acceso (igual)
+    .byte 0b01000000   # Granularidad byte, límite 16-19 = 0
+    .byte 0x00         # Base 24-31 = 0x00
+```
+
+La ventaja que presenta esto es que cada segmento tiene su propia zona de memoria y no se pueden pisar entre sí. Si el código intenta acceder fuera de su límite o los datos intentan acceder fuera de su límite o intentan ejecutarse, el procesador genera una excepción (General Protection Fault).
+
+
+#### Cambiar los bits de acceso del segmento de datos para que sea de solo lectura, intentar escribir, ¿Que sucede? ¿Que debería suceder a continuación? (revisar el teórico) Verificarlo con gdb.
+
+Para demostrar qué sucede al cambiar el segmento de datos a solo lectura, se modificó el byte de de acceso del descriptor `gdt_data` en la GDT.
+
+El byte de acceso original es `0b10010010`, donde el bit 1 (escritura) está en 1, lo que permite leer y escribir en el segmento de datos. Se cambió a `0b10010000`, poniendo el bit 1 en 0, haciendo el segmento de solo lectura.
+
+```asm
+# Original - lectura/escritura
+.byte 0b10010010
+
+# Modificado - solo lectura
+.byte 0b10010000
+```
+
+Con el segmento de datos con escritura habilitada, el programa escribe "Hello" en la memoria VGA (`0xB8000`) y se muestra correctamente en pantalla:
+
+![](/tp3/img/1.png)
+
+Al cambiar a solo lectura, cuando el código intenta escribir en `0xB8000`, el procesador detecta que el descriptor de datos no tiene permisos de escritura y genera una General Protection Fault. Como no hay una IDT (Interrupt Descriptor Table) configurada para manejar esa excepción, se produce un triple fault: la excepción genera otra excepción, que genera otra, y el procesador se cuelga. En qemu se ve que el sistema no muestra nada después de  "Booting from Hard Disk...".
+
+![](/tp3/img/2.png)
+
+Esto demuestra el mecanismo de protección de memoria del modo protegido: los bits de acceso de la GDT permiten controlar los permisos de cada segmento a nivel de hardware, y cualquier violación es detectada automáticamente por el procesador.
+
+#### En modo protegido, ¿Con qué valor se cargan los registros de segmento? ¿Porque?
+
+En modo protegido, los registros de segmento se cargan con selectores que son offsets dentro de la GDT.
+
+El registro CS (code segment) se carga con `0x08`, que apunta al descriptor de código (`gdt_code`), ubicado en la segunda entrada de la GDT (offset 1x8 = 8). Esta carga se realiza mediante un salto largo (`ljmp $0x08, $protected_mode`) ya que es la única forma de modificar CS.
+
+Los registros DS, ES, FS, GS y SS se cargan con `0x10`, que apunta al descriptor de datos (`gdt_data`), ubicado en la tercera entrada de la GDT (offset 2x8 = 16 = 0x10).
+
+```asm
+mov $0x10, %ax
+mov %ax, %ds
+mov %ax, %es
+mov %ax, %fs
+mov %ax, %gs
+mov %ax, %ss
+```
+
+Se tienen estos valores porque en modo protegido los registros de segmento ya no contienen direcciones directas como en modo real. Contienen selectores que el procesador usa como índice para buscar en la GDT la base, el límite y los permisos del segmento correspondiente. El valor `0x00` no se puede usar porque la primera entrada de la GDT es obligatoriamente nula, así que los selectores válidos empiezan desde `0x08`.
+
