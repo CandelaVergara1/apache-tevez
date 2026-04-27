@@ -1,6 +1,12 @@
+.global _start
+
+_start:
+
 .code16 # genera instrucciones de 16 bits
     cli # deshabilita interrupciones
     ljmp $0, $start # ponemos CS en 0
+
+
 
 start:
     xor %ax, %ax # ponemos el Ax en 0 
@@ -54,3 +60,13 @@ protected_mode:
     mov $0X7000, %ebp
     mov %ebp, %esp
 
+    movw $0x0f48, 0xB8000    # H
+    movw $0x0f65, 0xB8002    # e
+    movw $0x0f6C, 0xB8004    # l
+    movw $0x0f6C, 0xB8006    # l
+    movw $0x0f6F, 0xB8008    # o
+
+    jmp .
+
+    .fill 510 - (. - _start), 1, 0
+    .word 0xAA55
