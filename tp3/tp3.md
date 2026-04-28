@@ -145,14 +145,44 @@ Esta dirección es **estrictamente necesaria** porque le informa al linker cuál
 
 ![](img/dump.jpg)
 
-Comparando las salidas de objdump y hexdump, se puede concluir que a partir de la dirección 0x00 de la imagen, está la sección .text de la rutina de Assembly que ejecuta el hello world. Seguido de esto, se tiene un relleno para llegar a los 512 Bytes, y por último, la firma del MBR.
-Esta comparación Byte a Byte se aprecia mejor con el programa xxd, donde los bytes se muestran en el orden correcto:
+Comparando las salidas de objdump y hexdump, se observa que a partir del offset 0x00 de la imagen se encuentra el código correspondiente a la sección .text del programa en Assembly.
+
+La comparación byte a byte permite verificar que los valores mostrados por objdump coinciden con los presentes en la imagen binaria, aunque hexdump los presenta agrupados, lo que puede dificultar su lectura directa.
+
+A continuación del código se encuentra el string utilizado por el programa y luego un padding hasta completar los 512 bytes del sector de arranque.
+
+Finalmente, se observa la firma de booteo 0xAA55 en el offset 0x1FE, almacenada en formato little endian como los bytes 0x55 0xAA.
+
+Esta correspondencia se aprecia con mayor claridad utilizando xxd, que muestra los bytes en el mismo orden lineal que objdump.
 
 ![](img/xxd.jpg)
 
-#### 4. Grabacion de la imagen en un pendrive
+#### 4. Depuración y análisis con gdb
 
-#### 5. ¿Para qué se utiliza la opción `--oformat binary` en el linker?
+Utilizando gdb se procederá a la depuración de la imagen. Para ello se utilizará el siguiente comando en una terminal
+
+```sh
+qemu-system-i386 -fda main.img -boot a -s -S -monitor stdio
+```
+
+Luego, en otra terminal, se correrá lo siguiente:
+
+```sh
+gdb
+(gdb) target remote localhost:1234
+(gdb) set architecture i8086
+(gdb) br *0x7c00
+```
+
+Se establece el breakpoint en el offset 0x7c00, que coincide con el comienzo de la sección .text, como se definió en el archivo de linkeo. A partir de ahí, se utiliza c y si para llegar continuar la ejecución y para saltar a la siguiente instrucción, respectivamente.
+
+![](img/gdb1.jpg)
+
+![](img/gdb2.jpg)
+
+#### 5. Grabacion de la imagen en un pendrive
+
+#### 6. ¿Para qué se utiliza la opción `--oformat binary` en el linker?
 
 Esta opcion le indica al linker que el archivo ejecutable resultante debe ser un **binario plano (flat binary)**. Esto significa que el archivo final será crudo y contendrá exclusivamente el código máquina y los datos, eliminando por completo cualquier tipo de metadatos, cabeceras o tablas de símbolos que los linkers suelen agregar por defecto (como los formatos estándar ELF en Linux).
 
