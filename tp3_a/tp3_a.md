@@ -16,6 +16,98 @@
 | Candela Abigail Vergara           | candela.vergara@mi.unc.edu.ar     |
 | Joaquín Alejandro Salinas         | joaquin.salinas.874@mi.unc.edu.ar |
 
+## Trabajo Práctico 1: Exploración del entorno UEFI y la Shell
+
+### 1.1 Arranque en el entorno virtual
+Para explorar el entorno UEFI se utilizó el emulador QEMU junto con OVMF (Open Virtual Machine Firmware), que provee una implementación abierta de UEFI. A diferencia del BIOS Legacy, UEFI no se limita a cargar el MBR, sino que ejecuta un entorno pre-OS con servicios propios como gestión de memoria, drivers y consola.
+
+El sistema se inició con el siguiente comando:
+
+`qemu-system-x86_64 -m 512 -bios /usr/share/ovmf/OVMF.fd -net none`
+
+Al arrancar, se accedió a la UEFI Shell, desde donde es posible interactuar directamente con los servicios del firmware sin intervención de un sistema operativo, lo que permite analizar cómo UEFI abstrae el hardware y gestiona recursos en una etapa temprana del arranque.
+
+### 1.2 Exploración de Dispositivos (Handles y Protocolos)
+
+En la UEFI Shell se ejecutaron los siguientes comandos para explorar los dispositivos disponibles:
+
+```Shell> map
+Shell> FS0:
+FS0:\> ls
+Shell> dh -b
+```
+
+El comando `map` lista todos los dispositivos detectados por UEFI y los asocia a identificadores lógicos como `FS0:`, `BLK0:`, etc. En particular, los `FSx:` representan sistemas de archivos accesibles. 
+
+![](img/3.jpeg)
+
+Luego, al ingresar a `FS0:` se cambia el contexto a ese sistema de archivos, permitiendo interactuar con él como si fuera un directorio. El comando `ls` lista el contenido del sistema de archivos actual, permitiendo verificar qué archivos o ejecutables EFI están disponibles.
+
+Por su parte, `dh -b` (device handles) muestra en detalle los handles presentes en el sistema junto con los protocolos asociados a cada uno, permitiendo ver cómo UEFI vincula dispositivos con sus interfaces de acceso.
+
+![](img/4.jpeg)
+
+A diferencia del modelo tradicional basado en BIOS, donde los dispositivos se accedían mediante direcciones físicas o interrupciones, UEFI organiza los recursos mediante una arquitectura basada en handles (identificadores) y protocolos (interfaces). Esto introduce un nivel de abstracción que desacopla el software del hardware subyacente.
+
+¿Cuál es la ventaja de seguridad y compatibilidad de este modelo frente al antiguo BIOS?
+
+El modelo basado en handles y protocolos abstrae el hardware físico, desacoplando el software de detalles específicos como puertos o direcciones fijas. Esto mejora la compatibilidad porque un mismo binario puede ejecutarse en distintas plataformas sin depender de la implementación del hardware. Además, aumenta la seguridad al limitar el acceso directo a recursos físicos: los módulos sólo interactúan a través de interfaces definidas por UEFI, lo que reduce la superficie de ataque y evita manipulaciones directas de bajo nivel como ocurría en BIOS.
+
+
+
+### 1.3 Exploración de Dispositivos (Handles y Protocolos)
+
+En esta sección se exploraron las variables globales almacenadas en NVRAM (Non-Volatile RAM), una memoria no volátil donde UEFI guarda configuraciones que deben persistir entre reinicios. UEFI utiliza estas variables para definir su comportamiento, especialmente el proceso de arranque. En lugar de tener una lógica fija como el BIOS, el firmware se basa en estas variables para decidir qué hacer.
+
+Se ejecutaron los siguientes comandos para el analisis:
+```
+Shell> dmpstore
+Shell> set TestSeguridad "Hola UEFI"
+Shell> set -v
+```
+
+El comando `dmpstore` lista todas las variables almacenadas en NVRAM junto con su contenido. Entre ellas se destacan las variables `Boot####` (por ejemplo `Boot0000`, `Boot0001`), que representan entradas de arranque individuales, cada una apuntando a un dispositivo o archivo EFI específico.
+
+![](img/5.jpeg)
+
+El comando `set` permite crear o modificar variables de entorno dentro de la shell. En este caso, se creó una variable de prueba (TestSeguridad) para verificar manipulación de variables en el entorno.
+Por otro lado, `set -v` muestra todas las variables disponibles, incluyendo tanto variables de shell como variables globales.
+
+![](img/6.jpeg)
+
+Estas variables son fundamentales durante la fase BDS (Boot Device Selection), donde el firmware decide qué cargar antes de transferir el control al sistema operativo.
+
+¿Cómo determina el Boot Manager la secuencia de arranque?
+
+El Boot Manager utiliza la variable `BootOrder`, que contiene una lista ordenada de identificadores `(Boot####)`. Cada entrada `Boot####` define un dispositivo o ruta a un ejecutable EFI. Durante el arranque, el firmware recorre BootOrder en orden secuencial e intenta cargar cada opción hasta que una se ejecuta correctamente. De esta forma, la secuencia de arranque no está fija en el código del firmware, sino que está completamente definida por estas variables almacenadas en NVRAM.
+
+### 1.4 Footprinting de Memoria y Hardware
+En esta sección se realizó un relevamiento (footprinting) de los recursos del sistema disponibles en el entorno UEFI, incluyendo memoria, dispositivos PCI y drivers cargados.
+
+Se utilizaron los siguientes comandos:
+
+```
+Shell> memmap -b
+Shell> pci -b
+Shell> drivers -b
+```
+
+El comando `memmap -b` muestra el mapa de memoria del sistema, indicando las distintas regiones y su tipo (por ejemplo: LoaderCode, BootServicesCode, RuntimeServicesCode, etc.). Esto permite entender cómo UEFI organiza la memoria y qué áreas están reservadas para distintas funciones del firmware.
+
+![](img/7.jpeg)
+
+El comando `pci -b` lista los dispositivos conectados al bus PCI, incluyendo información como vendor ID, device ID y clase del dispositivo. Esto resulta útil para identificar el hardware presente desde el firmware, sin intervención del sistema operativo.
+
+![](img/8.jpeg)
+
+Por último, `drivers -b` muestra los drivers UEFI cargados en memoria y los handles a los que están asociados, evidenciando cómo el firmware gestiona dinámicamente los dispositivos a través de su modelo de protocolos.
+![](img/9.jpeg)
+
+
+¿Por qué las regiones RuntimeServicesCode son un objetivo principal para malware (Bootkits)?
+
+Las regiones RuntimeServicesCode contienen código del firmware que permanece accesible incluso después de que el sistema operativo toma el control. Esto significa que no se descartan durante la transición al OS, sino que siguen activas despues del arranque.
+Desde el punto de vista de seguridad, esto las convierte en un objetivo crítico: un bootkit que logre inyectar código en estas regiones puede persistir más allá del arranque y ejecutarse con privilegios elevados, incluso antes que muchos mecanismos de defensa del sistema operativo. Además, al operar en una capa inferior al OS, este tipo de malware es difícil de detectar y puede evadir soluciones tradicionales de seguridad.
 
 
 ## Trabajo Práctico 2: Desarrollo, compilación y análisis de seguridad
