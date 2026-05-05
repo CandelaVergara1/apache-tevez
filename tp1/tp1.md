@@ -267,7 +267,7 @@ En conclusión, la variación en la frecuencia de reloj impacta de manera direct
 
 El profiling es el proceso de medir y analizar el rendimiento de un código, evaluando principalmente el tiempo de ejecución del programa, como asi también cuanto tiempo tarda en ejecutarse cada función. Permite identificar qué partes del código consumen más recursos, mediante herramientas llamadas profilers, que suelen utilizar técnicas como muestreo (perf) o inyección de código (gprof).
 
-A partir de la realización del tutorial descrito en time profiling se pudo realizar el gprof de test_gprof.c y test_gprof_new.c, del cual obtuvimos un archivo txt que nos dio los resultados para el análisis ya que contiene toda la información de perfil deseada. Como ejemplo subimos tres archivo .txt con los resultados de los tres integrantes del grupo. Se muestra a continuación los resultados de analisis_candela.txt, el cual contiene dos tablas importantes:
+A partir de la realización del tutorial descrito en time profiling se pudo realizar el gprof de test_gprof.c y test_gprof_new.c, del cual obtuvimos un archivo txt que nos dio los resultados para el análisis ya que contiene toda la información de perfil deseada. Como ejemplo subimos tres archivo .txt con los resultados de los tres integrantes del grupo. Se muestra a continuación los resultados de analisis_Salinas-Joaquin.txt, el cual contiene dos tablas importantes:
 
 - **Perfil Plano:** Brinda una descripción general de la información de tiempo de las funciones, como el consumo de tiempo para la ejecución de una función en particular, cuántas veces se llamó, etc.
 
@@ -283,6 +283,11 @@ A partir de la realización del tutorial descrito en time profiling se pudo real
 
   ![Captura del grafico de llamadas](profiling/imgs/Callgraph.png)
 
+A continuación se muestra el gráfico de llamadas generado por gprof2dot, 
+el cual representa visualmente las relaciones entre funciones y el tiempo 
+consumido por cada una:
+
+![Gráfico de llamadas](profiling/imgs/gprof2dot.png)
 ## Conclusiones sobre el uso del tiempo de las funciones
 
 A partir del análisis de los resultados del profiling se observó que la función func1 es la que mayor tiempo consume, representando aproximadamente el 39.21% del tiempo total de ejecución, esto indica que es la principal candidata a optimización, ya que es donde más tiempo pasa el programa. En segundo lugar, la función new_func1 utiliza alrededor del 35.53% del tiempo, esto sugiere que también tiene un impacto significativo en el rendimiento general.
